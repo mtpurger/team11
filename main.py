@@ -10,7 +10,7 @@ from google.cloud import datastore
 
 import capitalsdsutility
 import utility
-
+import notebook
 
 app = Flask(__name__)
 
@@ -33,7 +33,7 @@ def parse_capital(capital):
 @app.route('/api/status', methods=['GET'])
 def status():
     """misc api/status"""
-    response = json.dumps({'insert': False, 'fetch': False, 'delete': False, 'list': True})
+    response = json.dumps({'insert': True, 'fetch': False, 'delete': False, 'list': True})
 
     return response, 200
 
@@ -51,6 +51,7 @@ def capitals():
         return jsonify(result)
     elif request.method == "PUT":
         inputobj = request.get_json()
+        idnum = request.get_json:id()
 
         capitalid = inputobj['id']
         country = inputobj['country']
@@ -61,7 +62,7 @@ def capitals():
         continent = inputobj['continent']
 
         capitalsds.store_capital(
-            capitalid,
+            idnum, capitalid,
             country,
             name,
             longitude,
@@ -70,6 +71,20 @@ def capitals():
             continent)
 
         return 'Successfully stored the capital', 200
+
+    if request.method == "GET":
+        inputobj = request.get_json()
+        capitalid = inputobj['id']
+        capitalsds.fetch_capital(
+            capitalid,
+            country,
+            name,
+            longitude,
+            latitude,
+            countrycode,
+            continent)
+
+        return 'Successfully read the capital', 200
 
     return "Request method not implemented yet: " + request.method
 
