@@ -29,22 +29,29 @@ def parse_capital(capital):
         'latitude': capital['latitude'],
         'longitude': capital['longitude']
     }
-    
+
+@app.route('/api/capitals/<id>', methods=['DELETE'])
+def deletecapital(id):
+    ds = datastore.Client(project='hackathon-team-011')
+    key = ds.key('capitals', int(id))
+    ds.delete(key)
+    return "Deleted", 200
+
 @app.route('/api/status', methods=['GET'])
 def status():
     """misc api/status"""
-    response = json.dumps({'insert': True, 'fetch': True, 'delete': False, 'list': True})
+    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True})
 
     return response, 200
 
-@app.route('/api/capitals/<id>', methods=['DELETE', 'GET', 'PUT'])
+@app.route('/api/capitals/<id>', methods=['GET'])
 def fetchcapital(id):
-    ds = datastore.Client(project='hackathon-team-011')
-    query = ds.query(kind="capitals")
-    query.add_filter('id', '=', int(id))
-    results = get_query_results(query)
-    result = [parse_capital(obj) for obj in results]
-    return jsonify(result)  
+        ds = datastore.Client(project='hackathon-team-011')
+        query = ds.query(kind="capitals")
+        query.add_filter('id', '=', int(id))
+        results = get_query_results(query)
+        result = [parse_capital(obj) for obj in results]
+        return jsonify(result)  
 
 @app.route('/api/capitals', methods=['DELETE', 'GET', 'PUT'])
 def capitals():
@@ -79,20 +86,6 @@ def capitals():
             continent)
 
         return 'Successfully stored the capital', 200
-
-    if request.method == "GET":
-        inputobj = request.get_json()
-        capitalid = inputobj['id']
-        capitalsds.fetch_capital(
-            capitalid,
-            country,
-            name,
-            longitude,
-            latitude,
-            countrycode,
-            continent)
-
-        return 'Successfully read the capital', 200
 
     return "Request method not implemented yet: " + request.method
 
