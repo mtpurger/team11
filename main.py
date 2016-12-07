@@ -6,6 +6,7 @@ import base64
 
 from flask import Flask, request
 from flask import jsonify
+from google.cloud import datastore
 
 import capitalsdsutility
 import utility
@@ -13,6 +14,21 @@ import utility
 
 app = Flask(__name__)
 
+def get_query_results(query):
+    results = list()
+    for entity in list(query.fetch()):
+        results.append(dict(entity))
+    return results
+
+def parse_capital(capital):
+    """converts a greeting to an object"""
+    return {
+        'countryCode': capital['countryCode'],
+        'country': capital['country'],
+        'name': capital['name'],
+        'latitude': capital['latitude'],
+        'longitude': capital['longitude']        
+    }    
 
 @app.route('/api/status', methods=['GET'])
 def status():
@@ -25,6 +41,14 @@ def status():
 def capitals():
     """deletes, fetchs and inserts capitals from/to datastore"""
     capitalsds = capitalsdsutility.Capitals()
+
+    if request.method == "GET":
+        ds = datastore.Client(project='hackathon-team-011')
+        query = ds.query(kind="capitals")
+        results = get_query_results(query)
+
+        result = [parse_capital(obj) for obj in results]
+        return jsonify(result)
 
     if request.method == "PUT":
         inputobj = request.get_json()
