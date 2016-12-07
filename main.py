@@ -37,6 +37,15 @@ def status():
 
     return response, 200
 
+@app.route('/api/capitals/<id>', methods=['DELETE', 'GET', 'PUT'])
+def fetchcapital(id):
+    ds = datastore.Client(project='hackathon-team-011')
+    query = ds.query(kind="capitals")
+    query.add_filter('id', '=', int(id))
+    results = get_query_results(query)
+    result = [parse_capital(obj) for obj in results]
+    return jsonify(result)  
+
 @app.route('/api/capitals', methods=['DELETE', 'GET', 'PUT'])
 def capitals():
     """deletes, fetchs and inserts capitals from/to datastore"""
@@ -51,7 +60,6 @@ def capitals():
         return jsonify(result)
     elif request.method == "PUT":
         inputobj = request.get_json()
-        idnum = request.get_json:id()
 
         capitalid = inputobj['id']
         country = inputobj['country']
