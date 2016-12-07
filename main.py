@@ -27,13 +27,13 @@ def parse_capital(capital):
         'country': capital['country'],
         'name': capital['name'],
         'latitude': capital['latitude'],
-        'longitude': capital['longitude']        
-    }    
-
+        'longitude': capital['longitude']
+    }
+    
 @app.route('/api/status', methods=['GET'])
 def status():
     """misc api/status"""
-    response = json.dumps({'insert': False, 'fetch': False, 'delete': False, 'list': False})
+    response = json.dumps({'insert': False, 'fetch': False, 'delete': False, 'list': True})
 
     return response, 200
 
@@ -49,8 +49,7 @@ def capitals():
 
         result = [parse_capital(obj) for obj in results]
         return jsonify(result)
-
-    if request.method == "PUT":
+    elif request.method == "PUT":
         inputobj = request.get_json()
 
         capitalid = inputobj['id']
