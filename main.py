@@ -23,73 +23,89 @@ def get_query_results(query):
 def parse_capital(capital):
     """converts a greeting to an object"""
     return {
-        'countryCode': capital['countryCode'],
+        'id': capital['id'],
         'country': capital['country'],
         'name': capital['name'],
-        'latitude': capital['latitude'],
-        'longitude': capital['longitude']
+        'location': {
+            'latitude': capital['latitude'],
+            'longitude': capital['longitude']
+        },
+        'countryCode': capital['countryCode'],
+        'continent': capital['continent']
     }
-
-@app.route('/api/capitals/<id>', methods=['DELETE'])
-def deletecapital(id):
-    ds = datastore.Client(project='hackathon-team-011')
-    key = ds.key('capitals', int(id))
-    ds.delete(key)
-    return "Deleted", 200
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    """misc api/status"""
-    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True})
-
+    response = json.dumps({'insert': False, 'fetch': False, 'delete': False, 'list': True})
     return response, 200
+
+@app.route('/api/capitals/<id>', methods=['DELETE'])
+def deletecapital(id):
+    try:
+        ds = datastore.Client(project='hackathon-team-011')
+        key = ds.key('capitals', int(id))
+        ds.delete(key)
+        return "Deleted!", 200
+    except Exception as e:
+        response = {'code': 0, 'message': 'Unexpected error'}
+        return jsonify(response)
 
 @app.route('/api/capitals/<id>', methods=['GET'])
 def fetchcapital(id):
+    try:
         ds = datastore.Client(project='hackathon-team-011')
         query = ds.query(kind="capitals")
         query.add_filter('id', '=', int(id))
         results = get_query_results(query)
-        result = [parse_capital(obj) for obj in results]
-        return jsonify(result)  
 
-@app.route('/api/capitals', methods=['DELETE', 'GET', 'PUT'])
-def capitals():
+        if len(results) == 0:
+            response = {'code': 404, 'message': 'Capital not found'}
+            return jsonify(response), 404
+
+        result = [parse_capital(obj) for obj in results]
+        return jsonify(result)
+    except Exception as e:
+        response = {'code': 0, 'message': 'Unexpected error'}
+        return jsonify(response)
+
+@app.route('/api/capitals', methods=['PUT'])
+def insertcapital():
     """deletes, fetchs and inserts capitals from/to datastore"""
     capitalsds = capitalsdsutility.Capitals()
 
-    if request.method == "GET":
+    inputobj = request.get_json()
+
+    capitalid = inputobj['id']
+    country = inputobj['country']
+    name = inputobj['name']
+    longitude = inputobj['location']['longitude']
+    latitude = inputobj['location']['latitude']
+    countrycode = inputobj['countryCode']
+    continent = inputobj['continent']
+
+    capitalsds.store_capital(
+        idnum, capitalid,
+        country,
+        name,
+        longitude,
+        latitude,
+        countrycode,
+        continent)
+
+    return 'Successfully stored the capital', 200      
+
+@app.route('/api/capitals', methods=['GET'])
+def listcapitals():
+    try:
         ds = datastore.Client(project='hackathon-team-011')
         query = ds.query(kind="capitals")
         results = get_query_results(query)
 
         result = [parse_capital(obj) for obj in results]
         return jsonify(result)
-    elif request.method == "PUT":
-        inputobj = request.get_json()
-
-        capitalid = inputobj['id']
-        country = inputobj['country']
-        name = inputobj['name']
-        longitude = inputobj['location']['longitude']
-        latitude = inputobj['location']['latitude']
-        countrycode = inputobj['countryCode']
-        continent = inputobj['continent']
-
-        capitalsds.store_capital(
-            idnum, capitalid,
-            country,
-            name,
-            longitude,
-            latitude,
-            countrycode,
-            continent)
-
-        return 'Successfully stored the capital', 200
-
-    return "Request method not implemented yet: " + request.method
-
-        
+    except Exception as e:
+        response = {'code': 0, 'message': 'Unexpected error'}
+        return jsonify(response)
 
 @app.route('/pubsub/receive', methods=['POST'])
 def pubsub_receive():
