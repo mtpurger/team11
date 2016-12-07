@@ -33,7 +33,7 @@ def parse_capital(capital):
 @app.route('/api/status', methods=['GET'])
 def status():
     """misc api/status"""
-    response = json.dumps({'insert': True, 'fetch': False, 'delete': False, 'list': True})
+    response = json.dumps({'insert': True, 'fetch': True, 'delete': False, 'list': True})
 
     return response, 200
 
