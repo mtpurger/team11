@@ -7,7 +7,7 @@ import base64
 from flask import Flask, request
 from flask import jsonify
 
-import notebook
+import capitalsdsutility
 import utility
 
 
@@ -21,7 +21,36 @@ def status():
 
     return response, 200
 
-@app.route('')
+@app.route('/api/capitals', methods=['DELETE', 'GET', 'PUT'])
+def capitals():
+    """deletes, fetchs and inserts capitals from/to datastore"""
+    capitalsds = capitalsdsutility.Capitals()
+
+    if request.method == "PUT":
+        inputobj = request.get_json()
+
+        capitalid = inputobj['id']
+        country = inputobj['country']
+        name = inputobj['name']
+        longitude = inputobj['location']['longitude']
+        latitude = inputobj['location']['latitude']
+        countrycode = inputobj['countryCode']
+        continent = inputobj['continent']
+
+        capitalsds.store_capital(
+            capitalid,
+            country,
+            name,
+            longitude,
+            latitude,
+            countrycode,
+            continent)
+
+        return 'Successfully stored the capital', 200
+
+    return "Request method not implemented yet: " + request.method
+
+        
 
 @app.route('/pubsub/receive', methods=['POST'])
 def pubsub_receive():

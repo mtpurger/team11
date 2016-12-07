@@ -7,7 +7,8 @@ from google.cloud import _helpers
 
 def project_id():
     """Returns the current google project"""
-    return _helpers._determine_default_project()
+    """return _helpers._determine_default_project()"""
+    return 'hackathon-team-011'
 
 
 def on_cloud():
