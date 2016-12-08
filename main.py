@@ -50,7 +50,8 @@ def deletecapital(id):
             return jsonify(response), 404
 
         ds.delete(key)
-        return "Deleted!", 200
+        response = {'code': 200, 'message': 'Capital successfully deleted'}
+        return response, 200
     except Exception as e:
         response = {'code': 0, 'message': 'Unexpected error'}
         return jsonify(response)
@@ -65,7 +66,7 @@ def fetchcapital(id):
             response = {'code': 404, 'message': 'Capital not found'}
             return jsonify(response), 404
 
-        return jsonify(entity), 200
+        return jsonify(parse_capital(entity)), 200
     except Exception as e:
         response = {'code': 0, 'message': 'Unexpected error'}
         return jsonify(response)
