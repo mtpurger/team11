@@ -7,6 +7,7 @@ import base64
 from flask import Flask, request
 from flask import jsonify
 from google.cloud import datastore
+from google.cloud import pubsub
 
 import capitalsdsutility
 import utility
@@ -114,12 +115,6 @@ def listcapitals():
         if opt_param != None:
             queryParms = opt_param.split(":")
             query.add_filter(queryParms[0], '=', queryParms[1])
-
-        opt_param = request.args.get("search")
-        if opt_param != None:
-            query.add_filter('*', '=', opt_param)
-
-        results = get_query_results(query)
         
         opt_param = request.args.get("search")
 
