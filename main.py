@@ -12,6 +12,8 @@ import capitalsdsutility
 import utility
 import notebook
 import sys
+from google.cloud import storage, exceptions
+from google.cloud.storage import Blob
 
 app = Flask(__name__)
 
@@ -37,7 +39,7 @@ def parse_capital(capital):
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True, 'query': True, 'search': False, 'pudsub' : False, 'storage' : False}) 
+    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True, 'query': True, 'search': False, 'pudsub' : True, 'storage' : False}) 
     return response, 200
 
 @app.route('/api/capitals/<id>', methods=['DELETE'])
@@ -124,6 +126,38 @@ def listcapitals():
         response = {'code': 0, 'message': 'Unexpected error'}
         return jsonify(response)
 
+@app.route('/api/capitals/<id>/publish', methods=['POST'])
+def publishtotopic(id):
+    try:
+        # Fetch the capital
+        ds = datastore.Client(project='hackathon-team-011')
+        key = ds.key('capitals', int(id))
+        entity = ds.get(key)
+
+        if entity is None:
+            response = {'code': 404, 'message': 'Capital record not found'}
+            return jsonify(response), 404
+
+        # Fetch the topic
+        obj = request.get_json();
+        topicname = obj['topic']
+        pubsubclient = pubsub.Client(project='hackathon-team-011')
+        topic = pubsubclient.topic(topicname)
+
+        if not topic.exists():
+            response = {'code': 404, 'message': 'Topic record not found'}
+            return jsonify(response), 404
+
+        # Publish the capital to the topic
+        message = json.dumps(entity)
+        publishedid = topic.publish(message)
+        
+        response = {'messageId': publishedid}
+        return jsonify(response), 200
+    except Exception as e:
+        response = {'code': 0, 'message': 'Unexpected error'}
+        return jsonify(response)
+
 @app.route('/api/capitals/<id>/store', methods=['POST'])
 def sendBucket(id):
     try:
@@ -135,8 +169,17 @@ def sendBucket(id):
             return jsonify(response), 404
 
         #file_put_contents("gs://hackathon-team-011.appspot.com/" + id + ".txt", base64.b64decode(jsonify(response)));
-        bPath = "gs://hackathon-team-011.appspot.com/" + id + ".txt"        
-        fp = open(bPath, 'w')
+        gcs = storage.Client(project='hackathon-team-011')
+        #gcs = cloudstorage.Storage()
+        bucket = gcs.get_bucket("hackathon-team-011.appspot.com")
+        filename = id + ".txt"
+        blob = Blob(filename, bucket)
+        open(filename, 'w')
+        #    output_file.write("test")
+        #    blob.upload_from_stream(output_file)
+
+        #bPath = "gs://hackathon-team-011.appspot.com/" + id + ".txt"        
+        #fp = open(bPath, 'w')
         return 'step 1', 200
         
         #fwrite(fp, jsonify(response));
