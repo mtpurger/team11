@@ -151,8 +151,8 @@ def publishtotopic(id):
         topicname = obj['topic']
         pubsubclient = pubsub.Client(project='hackathon-team-011')
         topic = pubsubclient.topic(topicname)
-
-        if topic is None:
+        
+        if not topic.exists():
             response = {'code': 404, 'message': 'Topic record not found'}
             return jsonify(response), 404
 
