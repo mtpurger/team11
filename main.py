@@ -11,6 +11,7 @@ from google.cloud import datastore
 import capitalsdsutility
 import utility
 import notebook
+import sys
 
 app = Flask(__name__)
 
@@ -36,7 +37,7 @@ def parse_capital(capital):
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True, 'query': False, 'search': False, 'pudsub' : False, 'storage' : False}) 
+    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True, 'query': True, 'search': False, 'pudsub' : False, 'storage' : False}) 
     return response, 200
 
 @app.route('/api/capitals/<id>', methods=['DELETE'])
@@ -51,7 +52,7 @@ def deletecapital(id):
 
         ds.delete(key)
         response = {'code': 200, 'message': 'Capital successfully deleted'}
-        return response, 200
+        return jsonify(response), 200
     except Exception as e:
         response = {'code': 0, 'message': 'Unexpected error'}
         return jsonify(response)
@@ -63,7 +64,7 @@ def fetchcapital(id):
         key = ds.key('capitals', int(id))
         entity = ds.get(ds.key('capitals', int(id)))
         if entity is None:
-            response = {'code': 404, 'message': 'Capital not found'}
+            response = {'code': 404, 'message': 'Capital record not found'}
             return jsonify(response), 404
 
         return jsonify(parse_capital(entity)), 200
@@ -106,13 +107,45 @@ def listcapitals():
     try:
         ds = datastore.Client(project='hackathon-team-011')
         query = ds.query(kind="capitals")
-        results = get_query_results(query)
 
+        opt_param = request.args.get("query")
+        if opt_param != None:
+            queryParms = opt_param.split(":")
+            query.add_filter(queryParms[0], '=', queryParms[1])
+
+        opt_param = request.args.get("search")
+        if opt_param != None:
+            query.add_filter('*', '=', opt_param)
+
+        results = get_query_results(query)
         result = [parse_capital(obj) for obj in results]
-        return jsonify(result)
+        return jsonify(result), 200
     except Exception as e:
         response = {'code': 0, 'message': 'Unexpected error'}
         return jsonify(response)
+
+@app.route('/api/capitals/<id>/store', methods=['POST'])
+def sendBucket(id):
+    try:
+        ds = datastore.Client(project='hackathon-team-011')
+        key = ds.key('capitals', int(id))
+        entity = ds.get(ds.key('capitals', int(id)))
+        if entity is None:
+            response = {'code': 404, 'message': 'Capital not found'}
+            return jsonify(response), 404
+
+        #file_put_contents("gs://hackathon-team-011.appspot.com/" + id + ".txt", base64.b64decode(jsonify(response)));
+        bPath = "gs://hackathon-team-011.appspot.com/" + id + ".txt"        
+        fp = open(bPath, 'w')
+        return 'step 1', 200
+        
+        #fwrite(fp, jsonify(response));
+        #fclose(fp);
+        #response = {'code': 200, 'message': 'Capital sent to the Bucket successfully'}
+        #return "gs://hackathon-team-011.appspot.com/" + id + ".txt", 200
+    except Exception as e:
+        response = {'code': 0, 'message': 'Unexpected error' + e.message}
+        return jsonify(response)    
 
 @app.route('/pubsub/receive', methods=['POST'])
 def pubsub_receive():
@@ -147,7 +180,6 @@ def access_notes():
         text = request.get_json()['text']
         book.store_note(text)
         return "done"
-
 
 @app.errorhandler(500)
 def server_error(err):
