@@ -6,12 +6,12 @@ import utility
 class Capitals:
 
     def __init__(self):
-        self.ds = datastore.Client(project=utility.project_id())
+        self.ds = datastore.Client(project='hackathon-team-011')
         self.kind = "capitals"
 
     def store_capital(self, idnum, capitalId, country, name, longitude, latitude, countryCode, continent):
-        key = self.ds.key(self.kind)
-        entity = datastore.Entity(idnum)
+        key = self.ds.key(self.kind, idnum)
+        entity = datastore.Entity(key)
 
         entity['id'] = capitalId
         entity['country'] = country

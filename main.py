@@ -40,7 +40,7 @@ def parse_capital(capital):
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True, 'query': True, 'search': True, 'pudsub' : True, 'storage' : True}) 
+    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True, 'query': True, 'search': True, 'pubsub' : True, 'storage' : True}) 
     return response, 200
 
 @app.route('/api/capitals/<id>', methods=['DELETE'])
@@ -75,14 +75,14 @@ def fetchcapital(id):
         response = {'code': 0, 'message': 'Unexpected error'}
         return jsonify(response)
 
-@app.route('/api/capitals/<id>', methods=['PUT'])
+@app.route('/api/capitals/<int:id>', methods=['PUT'])
 def insertcapital(id):
     try:
         """deletes, fetchs and inserts capitals from/to datastore"""
         capitalsds = capitalsdsutility.Capitals()
 
         inputobj = request.get_json()
-
+            
         capitalid = id
         country = inputobj['country']
         name = inputobj['name']
@@ -92,7 +92,7 @@ def insertcapital(id):
         continent = inputobj['continent']
 
         capitalsds.store_capital(
-            idnum, capitalid,
+            id, capitalid,
             country,
             name,
             longitude,
@@ -102,7 +102,7 @@ def insertcapital(id):
 
         return 'Successfully stored the capital', 200
     except Exception as e:
-        response = {'code': 0, 'message': 'Unexpected error'}
+        response = {'code': 0, 'message': 'Unexpected error: ' + e.message}
         return jsonify(response)      
 
 @app.route('/api/capitals', methods=['GET'])
@@ -152,7 +152,7 @@ def publishtotopic(id):
         pubsubclient = pubsub.Client(project='hackathon-team-011')
         topic = pubsubclient.topic(topicname)
 
-        if not topic.exists():
+        if topic is None:
             response = {'code': 404, 'message': 'Topic record not found'}
             return jsonify(response), 404
 
@@ -163,7 +163,7 @@ def publishtotopic(id):
         response = {'messageId': publishedid}
         return jsonify(response), 200
     except Exception as e:
-        response = {'code': 0, 'message': 'Unexpected error'}
+        response = {'code': 0, 'message': 'Unexpected error: ' + e.message}
         return jsonify(response)
 
 @app.route('/api/capitals/<id>/store', methods=['POST'])
@@ -182,15 +182,16 @@ def sendBucket(id):
         bucketname = obj['bucket']
 
         bucket = gcs.get_bucket(bucketname)
-        filename = id + ".txt"
+        filename = str(id)
+        
         blob = Blob(filename, bucket)
-
-        fs = open(filename, 'w')
-        fs.write(json.dumps(parse_capital(entity)))
-        fs.close()
-        fs = open(filename, 'r')
-        blob.upload_from_file(fs)
-        fs.close()
+        
+        #fs = open(filename, 'w')
+        #fs.write(json.dumps(parse_capital(entity)))
+        #fs.close()
+        #fs = open(filename, 'r')
+        blob.upload_from_string(json.dumps(parse_capital(entity)))
+        #fs.close()
 
         response = {'code': 200, 'message': 'Capital successfully stored in GCS in file: ' + filename}
         return jsonify(response), 200
