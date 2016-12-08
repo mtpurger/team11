@@ -39,7 +39,7 @@ def parse_capital(capital):
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True, 'query': True, 'search': False, 'pudsub' : True, 'storage' : False}) 
+    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True, 'query': True, 'search': True, 'pudsub' : True, 'storage' : True}) 
     return response, 200
 
 @app.route('/api/capitals/<id>', methods=['DELETE'])
@@ -120,7 +120,20 @@ def listcapitals():
             query.add_filter('*', '=', opt_param)
 
         results = get_query_results(query)
-        result = [parse_capital(obj) for obj in results]
+        
+        opt_param = request.args.get("search")
+
+        results = get_query_results(query)
+
+        result = []
+        for obj in results:
+            res1 = parse_capital(obj)
+            if opt_param is None:
+                result.append(res1)
+            else:
+                if opt_param in str(res1):
+                    result.append(res1)
+
         return jsonify(result), 200
     except Exception as e:
         response = {'code': 0, 'message': 'Unexpected error'}
@@ -149,7 +162,7 @@ def publishtotopic(id):
             return jsonify(response), 404
 
         # Publish the capital to the topic
-        message = json.dumps(entity)
+        message = json.dumps(parse_capital(entity))
         publishedid = topic.publish(message)
         
         response = {'messageId': publishedid}
@@ -168,27 +181,32 @@ def sendBucket(id):
             response = {'code': 404, 'message': 'Capital not found'}
             return jsonify(response), 404
 
-        #file_put_contents("gs://hackathon-team-011.appspot.com/" + id + ".txt", base64.b64decode(jsonify(response)));
         gcs = storage.Client(project='hackathon-team-011')
-        #gcs = cloudstorage.Storage()
-        bucket = gcs.get_bucket("hackathon-team-011.appspot.com")
+
+        obj = request.get_json();
+        bucketname = obj['bucket']
+
+        bucket = gcs.get_bucket(bucketname)
         filename = id + ".txt"
         blob = Blob(filename, bucket)
-        open(filename, 'w')
-        #    output_file.write("test")
-        #    blob.upload_from_stream(output_file)
 
-        #bPath = "gs://hackathon-team-011.appspot.com/" + id + ".txt"        
-        #fp = open(bPath, 'w')
-        return 'step 1', 200
-        
-        #fwrite(fp, jsonify(response));
-        #fclose(fp);
-        #response = {'code': 200, 'message': 'Capital sent to the Bucket successfully'}
-        #return "gs://hackathon-team-011.appspot.com/" + id + ".txt", 200
+        fs = open(filename, 'w')
+        fs.write(json.dumps(parse_capital(entity)))
+        fs.close()
+        fs = open(filename, 'r')
+        blob.upload_from_file(fs)
+        fs.close()
+
+        response = {'code': 200, 'message': 'Capital successfully stored in GCS in file: ' + filename}
+        return jsonify(response), 200
+
+    except exceptions.NotFound:
+        response = {'code': 404, 'message': 'Error: Bucket {} does not exists.'.format(bucketname)}
+        return jsonify(response), 404
     except Exception as e:
         response = {'code': 0, 'message': 'Unexpected error' + e.message}
-        return jsonify(response)    
+        return jsonify(response)
+  
 
 @app.route('/pubsub/receive', methods=['POST'])
 def pubsub_receive():
