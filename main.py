@@ -36,7 +36,7 @@ def parse_capital(capital):
 
 @app.route('/api/status', methods=['GET'])
 def status():
-    response = json.dumps({'insert': False, 'fetch': False, 'delete': False, 'list': True})
+    response = json.dumps({'insert': True, 'fetch': True, 'delete': True, 'list': True, 'query': False, 'search': False, 'pudsub' : False, 'storage' : False}) 
     return response, 200
 
 @app.route('/api/capitals/<id>', methods=['DELETE'])
@@ -44,6 +44,11 @@ def deletecapital(id):
     try:
         ds = datastore.Client(project='hackathon-team-011')
         key = ds.key('capitals', int(id))
+        entity = ds.get(ds.key('capitals', int(id)))
+        if entity is None:
+            response = {'code': 404, 'message': 'Capital not found'}
+            return jsonify(response), 404
+
         ds.delete(key)
         return "Deleted!", 200
     except Exception as e:
@@ -54,45 +59,46 @@ def deletecapital(id):
 def fetchcapital(id):
     try:
         ds = datastore.Client(project='hackathon-team-011')
-        query = ds.query(kind="capitals")
-        query.add_filter('id', '=', int(id))
-        results = get_query_results(query)
-
-        if len(results) == 0:
+        key = ds.key('capitals', int(id))
+        entity = ds.get(ds.key('capitals', int(id)))
+        if entity is None:
             response = {'code': 404, 'message': 'Capital not found'}
             return jsonify(response), 404
 
-        result = [parse_capital(obj) for obj in results]
-        return jsonify(result)
+        return jsonify(entity), 200
     except Exception as e:
         response = {'code': 0, 'message': 'Unexpected error'}
         return jsonify(response)
 
-@app.route('/api/capitals', methods=['PUT'])
-def insertcapital():
-    """deletes, fetchs and inserts capitals from/to datastore"""
-    capitalsds = capitalsdsutility.Capitals()
+@app.route('/api/capitals/<id>', methods=['PUT'])
+def insertcapital(id):
+    try:
+        """deletes, fetchs and inserts capitals from/to datastore"""
+        capitalsds = capitalsdsutility.Capitals()
 
-    inputobj = request.get_json()
+        inputobj = request.get_json()
 
-    capitalid = inputobj['id']
-    country = inputobj['country']
-    name = inputobj['name']
-    longitude = inputobj['location']['longitude']
-    latitude = inputobj['location']['latitude']
-    countrycode = inputobj['countryCode']
-    continent = inputobj['continent']
+        capitalid = id
+        country = inputobj['country']
+        name = inputobj['name']
+        longitude = inputobj['location']['longitude']
+        latitude = inputobj['location']['latitude']
+        countrycode = inputobj['countryCode']
+        continent = inputobj['continent']
 
-    capitalsds.store_capital(
-        idnum, capitalid,
-        country,
-        name,
-        longitude,
-        latitude,
-        countrycode,
-        continent)
+        capitalsds.store_capital(
+            idnum, capitalid,
+            country,
+            name,
+            longitude,
+            latitude,
+            countrycode,
+            continent)
 
-    return 'Successfully stored the capital', 200      
+        return 'Successfully stored the capital', 200
+    except Exception as e:
+        response = {'code': 0, 'message': 'Unexpected error'}
+        return jsonify(response)      
 
 @app.route('/api/capitals', methods=['GET'])
 def listcapitals():
