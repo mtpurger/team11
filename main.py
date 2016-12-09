@@ -147,11 +147,14 @@ def publishtotopic(id):
             return jsonify(response), 404
 
         # Fetch the topic
-        obj = request.get_json();
-        topicname = obj['topic']
-        pubsubclient = pubsub.Client(project='hackathon-team-011')
+        obj = request.get_json()
+        bigtopicname = obj['topic']
+        tokens = bigtopicname.split('/')
+        projectname = tokens[1]
+        topicname = tokens[3]
+        pubsubclient = pubsub.Client(project=projectname)
         topic = pubsubclient.topic(topicname)
-        
+
         if not topic.exists():
             response = {'code': 404, 'message': 'Topic record not found'}
             return jsonify(response), 404
@@ -160,7 +163,7 @@ def publishtotopic(id):
         message = json.dumps(parse_capital(entity))
         publishedid = topic.publish(message)
         
-        response = {'messageId': publishedid}
+        response = {'messageId': int(publishedid)}
         return jsonify(response), 200
     except Exception as e:
         response = {'code': 0, 'message': 'Unexpected error: ' + e.message}
