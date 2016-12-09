@@ -257,9 +257,12 @@ def access_notes():
         book.store_note(text)
         return "done"
 
-@app.route('/api/capitals/map', methods=['GET'])
-def test_reverse_geocode():
-    gmaps = googlemaps.Client(key='AIzaSyDmfwKdVtJgOvTByXYXKyKsTAKlGjHEYDE')    
+@app.route('/api/capitals/map/<id>', methods=['GET'])
+def loadCapitalMap(id):
+    gmaps = googlemaps.Client(key='AIzaSyDmfwKdVtJgOvTByXYXKyKsTAKlGjHEYDE')
+
+    # Get capital latitude and longitude
+    #capital = fetchcapital(id)    
 	
     #responses.add(responses.GET, 'https://maps.googleapis.com/maps/api/geocode/json',  body='{"status":"OK","results":[]}',  status=200,  content_type='application/json')
 
