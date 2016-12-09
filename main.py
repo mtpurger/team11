@@ -5,7 +5,7 @@ import json
 import base64
 import googlemaps
 
-import urllib, urllib2  
+import urllib, urllib2
 
 from flask import Flask, request
 from flask import jsonify
@@ -13,6 +13,7 @@ from google.cloud import datastore
 from google.cloud import pubsub
 
 import capitalsdsutility
+import Map
 import utility
 import notebook
 import sys
@@ -21,9 +22,9 @@ from google.cloud.storage import Blob
 
 app = Flask(__name__)
 
-def get_query_results(query):
+def get_query_results(query, limitNum):
     results = list()
-    for entity in list(query.fetch()):
+    for entity in list(query.fetch(limit=limitNum)):
         results.append(dict(entity))
     return results
 
@@ -122,7 +123,11 @@ def listcapitals():
             limit = 99999999
         
         opt_param = request.args.get("search")
-        results = get_query_results(query)
+
+        if opt_param != None:
+            limit = 99999999 
+
+        results = get_query_results(query, limit)
         
         count = 0
         result = []
@@ -261,15 +266,24 @@ def test_reverse_geocode():
 	# Look up an address with reverse geocoding
     reverse_geocode_result = gmaps.reverse_geocode((40.714224, -73.961452))
 
-    url = 'http://maps.googleapis.com/maps/api/geocode/json?' + urllib.urlencode(params)
+    print reverse_geocode_result
+    
+    mymap = Map()
+    # Add Beijing, you'll want to use your geocoded points here:
+    mymap.add_point((40.714224, -73.96145))
+    #with open("output.html", "w") as out:
+    #    print(map)
 
-    rawreply = urllib2.urlopen(url).read()                                          
-    reply = json.loads(rawreply)  
+    #address = reverse_geocode_result[0][0]
 
-    if reverse_geocode_result is None:
-        return "none", 200
+    #url = 'http://maps.googleapis.com/maps/api/geocode/json?' + urllib.urlencode(params)
+    #rawreply = urllib2.urlopen(url).read()                                          
+    #reply = json.loads(rawreply)  
 
-    return "reverse_geocode_result", 200
+    #if reverse_geocode_result is None:
+    #    return "none", 200
+
+    #return address, 200
 
 @app.errorhandler(500)
 def server_error(err):
