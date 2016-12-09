@@ -3,6 +3,9 @@
 import logging
 import json
 import base64
+import googlemaps
+
+import urllib, urllib2  
 
 from flask import Flask, request
 from flask import jsonify
@@ -108,6 +111,7 @@ def insertcapital(id):
 @app.route('/api/capitals', methods=['GET'])
 def listcapitals():
     try:
+        limit = 20
         ds = datastore.Client(project='hackathon-team-011')
         query = ds.query(kind="capitals")
 
@@ -115,18 +119,22 @@ def listcapitals():
         if opt_param != None:
             queryParms = opt_param.split(":")
             query.add_filter(queryParms[0], '=', queryParms[1])
+            limit = 99999999
         
         opt_param = request.args.get("search")
         results = get_query_results(query)
-
+        
+        count = 0
         result = []
         for obj in results:
-            res1 = parse_capital(obj)
-            if opt_param is None:
-                result.append(res1)
-            else:
-                if opt_param in str(res1):
+            if count < limit:
+                count += 1
+                res1 = parse_capital(obj)
+                if opt_param is None:
                     result.append(res1)
+                else:
+                    if opt_param in str(res1):
+                        result.append(res1)
 
         if len(result) == 0:
             response = {'code': 404, 'message': 'Search did not return anything' }
@@ -243,6 +251,25 @@ def access_notes():
         text = request.get_json()['text']
         book.store_note(text)
         return "done"
+
+@app.route('/api/capitals/map', methods=['GET'])
+def test_reverse_geocode():
+    gmaps = googlemaps.Client(key='AIzaSyDmfwKdVtJgOvTByXYXKyKsTAKlGjHEYDE')    
+	
+    #responses.add(responses.GET, 'https://maps.googleapis.com/maps/api/geocode/json',  body='{"status":"OK","results":[]}',  status=200,  content_type='application/json')
+
+	# Look up an address with reverse geocoding
+    reverse_geocode_result = gmaps.reverse_geocode((40.714224, -73.961452))
+
+    url = 'http://maps.googleapis.com/maps/api/geocode/json?' + urllib.urlencode(params)
+
+    rawreply = urllib2.urlopen(url).read()                                          
+    reply = json.loads(rawreply)  
+
+    if reverse_geocode_result is None:
+        return "none", 200
+
+    return "reverse_geocode_result", 200
 
 @app.errorhandler(500)
 def server_error(err):
