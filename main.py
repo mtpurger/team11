@@ -117,7 +117,6 @@ def listcapitals():
             query.add_filter(queryParms[0], '=', queryParms[1])
         
         opt_param = request.args.get("search")
-
         results = get_query_results(query)
 
         result = []
@@ -128,6 +127,10 @@ def listcapitals():
             else:
                 if opt_param in str(res1):
                     result.append(res1)
+
+        if len(result) == 0:
+            response = {'code': 404, 'message': 'Search did not return anything' }
+            return jsonify(response), 404
 
         return jsonify(result), 200
     except Exception as e:
